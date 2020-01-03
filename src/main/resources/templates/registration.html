@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Spring boot forum</title>
+    <link rel="stylesheet" th:href="@{/styles.css}" />
+</head>
+<body>
+<h1>Register</h1>
+
+<span th:text="${daoResult}"></span><br/>
+
+<form method="POST" th:object="${registrationForm}" th:action="@{/register}" id="newRegistration">
+    <div th:if="${#fields.hasErrors()}">
+    <span class="validationError">
+        Unable to register. Check your params below.
+    </span>
+    </div>
+
+    <label for="username">Name: </label>
+    <input type="text" name="username"/>
+    <span class="validationError"
+          th:if="${#fields.hasErrors('username')}"
+          th:errors="*{username}">Username Error</span>
+    <br/>
+
+    <label for="password">Password: </label>
+    <input type="password" th:field="*{password}"/>
+    <span class="validationError"
+          th:if="${#fields.hasErrors('password')}"
+          th:errors="*{password}">Username Error</span>
+    <br/>
+
+    <label for="email">Email: </label>
+    <input type="text" th:field="*{email}"/>
+    <span class="validationError"
+          th:if="${#fields.hasErrors('email')}"
+          th:errors="*{email}">Email Error</span>
+    <br/>
+
+    <label for="sex">Sex: </label>
+    <div>
+        <input th:type="radio" th:field="*{sex}" id="sex1"
+               name="sex" th:value="MALE">
+        <label for="sex1">Male</label>
+
+        <input th:type="radio" th:field="*{sex}" id="sex2"
+               name="sex" th:value="FEMALE">
+        <label for="sex2">Female</label>
+    </div>
+    <span class="validationError"
+          th:if="${#fields.hasErrors('sex')}"
+          th:errors="*{sex}">Sex Error</span>
+    <br/>
+
+    <label for="birthDate">BirthDate: </label>
+    <input th:type="date" th:field="*{birthDate}" id="birthDate"
+           value="1992-07-22">
+    <span class="validationError"
+          th:if="${#fields.hasErrors('birthDate')}"
+          th:errors="*{birthDate}">Date Error</span>
+    <br/>
+    <input type="submit" value="Register"/>
+</form>
+
+</body>
+</html>

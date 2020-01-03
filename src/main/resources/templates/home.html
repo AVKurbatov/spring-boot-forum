@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Spring boot forum</title>
+    <link rel="stylesheet" th:href="@{/styles.css}" />
+</head>
+<body>
+<h1>Welcome to the forum</h1>
+<h2>
+    Come aboard!
+    <div sec:authorize="isAuthenticated()">
+        Hello, <span th:text="${session.user.username}"></span>!
+        <form method="POST" th:action="@{/logout}" id="logoutForm">
+            <input type="submit" value="Logout"/>
+        </form>
+    </div>
+</h2>
+
+<div sec:authorize="!isAuthenticated()">
+    Login to post messages.
+    <a href="/login">login</a>
+</div>
+
+<p>
+    <a href="/topics">topics</a>
+</p>
+</body>
+</html>

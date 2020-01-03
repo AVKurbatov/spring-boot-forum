@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <p id="messages_title"><title id="messages_title">Messages</title></p>
+    <link rel="stylesheet" th:href="@{/styles.css}" />
+</head>
+<body>
+<h1>Messages</h1>
+<h2>Hello,
+    <div sec:authorize="isAuthenticated()">
+        <span th:text="${session.user.username}"></span>
+        <form method="POST" th:action="@{/logout}" id="logoutForm">
+            <input type="submit" value="Logout"/>
+        </form>
+    </div>
+</h2>
+<div sec:authorize="!isAuthenticated()">
+    Login to post messages.
+    <a href="/login">login</a>
+</div>
+
+<p>
+    <a href="/topics">topics</a>
+</p>
+
+<p id="messages_list_table"></p>
+
+<div sec:authorize="hasRole('ROLE_USER')">
+
+    <form th:method="POST" th:object="${message}" th:action="@{/messages/post}" id="newMessage">
+        <div th:if="${#fields.hasErrors()}">
+        <span class="validationError">
+        Unable to create message. Check your params below.
+    </span>
+        </div>
+
+        <label for="text">New message: </label>
+        <input type="text" th:field="*{text}"/>
+        <span class="validationError"
+              th:if="${#fields.hasErrors('text')}"
+              th:errors="*{text}">Text Error</span>
+        <br/>
+
+        <input type="hidden" th:value="${topicId}" name="topicId"/>
+        <input type="hidden" th:value="${session.user.username}" name="accountUsername"/>
+
+        <input type="submit" value="Post a new message"/>
+    </form>
+
+</div>
+
+<p id="messages_pages_navigator">messages_pages_navigator</p>
+
+<input type="hidden" th:value="${topicId}" id="topicIdInputElement" />
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript"></script>
+<script th:src="@{/js/common.js}"></script>
+<script th:src="@{/js/messages.js}"></script>
+</body>
+</html>
