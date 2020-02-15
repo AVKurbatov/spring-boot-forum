@@ -24,6 +24,8 @@ public class RedisDaoTestConfig {
 
     @Value("${redis.embedded.server.port}")
     private int port;
+    @Value("${message.dao.page.size}")
+    private int pageSize;
 
     @Bean
     public TestRedisServer redisServer(){
@@ -54,16 +56,16 @@ public class RedisDaoTestConfig {
 
     @Bean
     public AccountDao accountDao() {
-        return new AccountDaoRedis(redisTemplate());
+        return new AccountDaoRedis(redisTemplate(), messageDao());
     }
 
     @Bean
     public TopicDao topicDao() {
-        return new TopicDaoRedis(redisTemplate());
+        return new TopicDaoRedis(redisTemplate(), messageDao());
     }
 
     @Bean
-    public MessageDao messageDao(@Value("${message.dao.page.size}") int pageSize) {
+    public MessageDao messageDao() {
         return new MessageDaoRedis(pageSize, redisTemplate());
     }
 }

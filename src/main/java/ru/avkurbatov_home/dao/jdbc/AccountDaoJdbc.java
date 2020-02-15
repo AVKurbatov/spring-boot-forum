@@ -36,6 +36,10 @@ public class AccountDaoJdbc extends AbstractAccountDao {
             Utils.readScript("sql/insert_basic_params_into_account.sql");
     private static final String INSERT_AUTHORITIES_INTO_ACCOUNT =
             Utils.readScript("sql/insert_authorities_into_account.sql");
+    private static final String DELETE_USER_BY_USERNAME_QUERY =
+            Utils.readScript("sql/delete_user_by_username.sql");
+    private static final String DELETE_AUTHORITIES_FOR_USERNAME_QUERY =
+            Utils.readScript("sql/delete_authorities_for_username.sql");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -77,6 +81,13 @@ public class AccountDaoJdbc extends AbstractAccountDao {
         });
 
         return RegisterResult.OK;
+    }
+
+    @Override
+    @Transactional
+    public void delete(String username) {
+        jdbcTemplate.update(DELETE_USER_BY_USERNAME_QUERY, username);
+        jdbcTemplate.update(DELETE_AUTHORITIES_FOR_USERNAME_QUERY, username);
     }
 
     private static class AccountExtractor implements ResultSetExtractor<Account>{

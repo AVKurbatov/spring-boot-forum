@@ -10,12 +10,18 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 import ru.avkurbatov_home.dao.abstracts.AbstractAccountDao;
+import ru.avkurbatov_home.dao.abstracts.MessageDao;
 import ru.avkurbatov_home.enums.RegisterResult;
 import ru.avkurbatov_home.jdo.Account;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import ru.avkurbatov_home.utils.StringTypeConverter;
 
 import javax.inject.Inject;
 import java.util.*;
+
+import static ru.avkurbatov_home.dao.redis.StructureNames.*;
+import static ru.avkurbatov_home.dao.redis.StructureNames.TOPIC_IDS;
+import static ru.avkurbatov_home.dao.redis.StructureNames.topicHashKey;
 
 /**
  * Structure in redis:
@@ -23,21 +29,18 @@ import java.util.*;
  * ACCOUNT_PREFIX + ":username" --- hash with id and title
  * ACCOUNT_AUTHORITIES + ":username" --- set with authorities
  * */
-// todo: messages have links to accounts, so method with delete account should delete all his messages
 @Slf4j
 @Repository
 @Profile("redis")
 public class AccountDaoRedis extends AbstractAccountDao {
 
-    private static final String ACCOUNT_USERNAMES = "accounts";
-    private static final String ACCOUNT_PREFIX = "account:";
-    private static final String ACCOUNT_AUTHORITIES = "authorities:";
-
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MessageDao messageDao;
 
     @Inject
-    public AccountDaoRedis(RedisTemplate<String, Object> redisTemplate) {
+    public AccountDaoRedis(RedisTemplate<String, Object> redisTemplate, MessageDao messageDao) {
         this.redisTemplate = redisTemplate;
+        this.messageDao = messageDao;
     }
 
     @Override
@@ -49,8 +52,8 @@ public class AccountDaoRedis extends AbstractAccountDao {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
-                map.putAll(sc.hGetAll(hashKey(username)));
-                set.addAll(sc.sMembers(authorityKey(username)));
+                map.putAll(sc.hGetAll(accountHashKey(username)));
+                set.addAll(sc.sMembers(accountAuthorityKey(username)));
                 return null;
             }
         });
@@ -74,8 +77,8 @@ public class AccountDaoRedis extends AbstractAccountDao {
                     return null;
                 }
                 sc.sAdd(ACCOUNT_USERNAMES, username);
-                sc.hMSet(hashKey(username), map);
-                sc.sAdd(authorityKey(username), authorities);
+                sc.hMSet(accountHashKey(username), map);
+                sc.sAdd(accountAuthorityKey(username), authorities);
                 return null;
             }
         });
@@ -87,11 +90,17 @@ public class AccountDaoRedis extends AbstractAccountDao {
         return RegisterResult.OK;
     }
 
-    private String hashKey(String username){
-        return ACCOUNT_PREFIX + username;
+    /**
+     * Messages have links to accounts, so this method deletes account with all his messages
+     * */
+    @Override
+    public void delete(String username) {
+        redisTemplate.opsForSet().members(messagesInAccountSetKey(username)).stream()
+                .map(StringTypeConverter::toInteger).forEach(messageDao::delete);
+
+        redisTemplate.delete(accountAuthorityKey(username));
+        redisTemplate.delete(accountHashKey(username));
+        redisTemplate.opsForSet().remove(ACCOUNT_USERNAMES, username);
     }
 
-    private String authorityKey(String username){
-        return ACCOUNT_AUTHORITIES + username;
-    }
 }

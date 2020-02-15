@@ -8,7 +8,11 @@ import org.apache.logging.log4j.util.Strings;
 public final class StringTypeConverter {
     private StringTypeConverter() {}
 
-    public static Integer toInteger(String value){
+    public static Integer toInteger(Object value) {
+        return toInteger(value.toString());
+    }
+
+    public static Integer toInteger(String value) {
         if (Strings.isBlank(value)) {
             return null;
         }
@@ -20,7 +24,7 @@ public final class StringTypeConverter {
         }
     }
 
-    public static String fromInteger(Integer value){
+    public static String fromInteger(Integer value) {
         if (value == null) {
             return null;
         }

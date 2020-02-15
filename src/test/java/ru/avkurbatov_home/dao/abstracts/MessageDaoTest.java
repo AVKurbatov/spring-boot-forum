@@ -26,7 +26,7 @@ public abstract class MessageDaoTest {
     @Inject
     private MessageDao messageDao;
 
-    protected void generateTopicAndAccount(){
+    protected void generateTopicAndAccount() {
         Topic topic = TestUtils.createTopic();
         topic = topicDao.save(topic);
         topicId = topic.getId();
@@ -35,7 +35,7 @@ public abstract class MessageDaoTest {
     }
 
     @Test
-    public void shouldSaveAndFindDate(){
+    public void shouldSaveAndFindDate() {
         // Given
         Message message = createMessage();
 
@@ -53,7 +53,7 @@ public abstract class MessageDaoTest {
     }
 
     @Test
-    public void shouldHandleEmptyPage(){
+    public void shouldHandleEmptyPage() {
         // For empty table
         assertEquals(0, messageDao.findTotalNumberOfPages(topicId));
 
@@ -66,9 +66,8 @@ public abstract class MessageDaoTest {
         assertEquals(1, messageDao.findForPage(topicId,0).size());
         assertEquals(0, messageDao.findForPage(topicId,1).size());
     }
-// todo: test for delete account
-// todo: test for delete topic
-    private Message createMessage(){
+
+    private Message createMessage() {
         Message message = new Message();
         message.setTopicId(topicId);
         message.setAccountUsername(ACCOUNT_USERNAME);

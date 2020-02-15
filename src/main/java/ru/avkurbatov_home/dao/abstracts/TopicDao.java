@@ -15,4 +15,5 @@ public interface TopicDao {
 
     Topic save(Topic topic);
 
+    void delete(int id);
 }

@@ -4,17 +4,24 @@ import org.junit.Test;
 import ru.avkurbatov_home.dao.abstracts.AccountDao;
 import ru.avkurbatov_home.enums.RegisterResult;
 import ru.avkurbatov_home.jdo.Account;
+import ru.avkurbatov_home.jdo.Message;
+import ru.avkurbatov_home.jdo.Topic;
 import ru.avkurbatov_home.utils.TestUtils;
 
 import javax.inject.Inject;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static ru.avkurbatov_home.utils.TestConstants.*;
 
 public abstract class AccountDaoTest {
 
     @Inject
     private AccountDao accountDao;
+    @Inject
+    private TopicDao topicDao;
+    @Inject
+    private MessageDao messageDao;
 
     @Test
     public void shouldRegisterWithSeveralAuthorities(){
@@ -51,4 +58,27 @@ public abstract class AccountDaoTest {
         assertEquals(RegisterResult.USERNAME_EXISTS, secondResult);
     }
 
+    @Test
+    public void shouldRemoveMessagesThenDeleteAccount() {
+        // Given
+        Message message = new Message();
+
+        Topic topic = topicDao.save(TestUtils.createTopic());
+        message.setTopicId(topic.getId());
+
+        accountDao.register(TestUtils.createAccount());
+        message.setAccountUsername(USERNAME);
+
+        message.setText("any text");
+
+        messageDao.save(message);
+
+        // When
+        accountDao.delete(USERNAME);
+
+        // Then
+        assertNull(accountDao.findByUsername(USERNAME));
+        assertEquals(0, messageDao.findTotalNumberOfPages(topic.getId()));
+
+    }
 }

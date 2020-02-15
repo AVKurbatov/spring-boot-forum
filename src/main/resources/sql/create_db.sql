@@ -38,7 +38,7 @@ PRIMARY KEY (id),
 UNIQUE KEY id (id),
 CONSTRAINT messages_accounts_fk FOREIGN KEY(accountUsername)
 REFERENCES accounts(username)
-ON DELETE SET NULL
+ON DELETE CASCADE
 ON UPDATE CASCADE,
 CONSTRAINT messages_topic_fk FOREIGN KEY(topicId)
 REFERENCES topics(id)

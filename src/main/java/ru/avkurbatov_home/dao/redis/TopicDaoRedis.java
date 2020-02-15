@@ -9,6 +9,7 @@ import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
+import ru.avkurbatov_home.dao.abstracts.MessageDao;
 import ru.avkurbatov_home.dao.abstracts.TopicDao;
 import ru.avkurbatov_home.jdo.Topic;
 import ru.avkurbatov_home.utils.StringTypeConverter;
@@ -17,6 +18,9 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static ru.avkurbatov_home.dao.redis.StructureNames.*;
 
 /**
  * Structure in redis:
@@ -24,21 +28,19 @@ import java.util.Set;
  * TOPIC_IDS --- set with all available ids
  * TOPIC_HASH_PREFIX + ":id" --- hash with id and title
  * */
-// todo: messages have links to topics, so method with delete topic should delete all his messages
 @Slf4j
 @Repository
 @Profile("redis")
 public class TopicDaoRedis implements TopicDao {
 
-    private static final String TOPIC_IDS_COUNTER = "topicIdCount";
-    private static final String TOPIC_IDS = "topicIds";
-    private static final String TOPIC_HASH_PREFIX = "topic:";
-
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MessageDao messageDao;
 
     @Inject
-    public TopicDaoRedis(RedisTemplate<String, Object> redisTemplate) {
+    public TopicDaoRedis(RedisTemplate<String, Object> redisTemplate,
+                         MessageDao messageDao) {
         this.redisTemplate = redisTemplate;
+        this.messageDao = messageDao;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class TopicDaoRedis implements TopicDao {
                     if (intId == null){
                         return;
                     }
-                    topics.add(Topic.fromRedisMap(sc.hGetAll(hashKey(intId))));
+                    topics.add(Topic.fromRedisMap(sc.hGetAll(topicHashKey(intId))));
                 });
                 return null;
             }
@@ -65,26 +67,34 @@ public class TopicDaoRedis implements TopicDao {
     @Override
     public Topic findById(int id) {
         return Topic.fromRedisMap(
-                redisTemplate.<String, String>opsForHash().entries(hashKey(id)));
+                redisTemplate.<String, String>opsForHash().entries(topicHashKey(id)));
     }
 
     @Override
     public Topic save(Topic topic) {
         int id = redisTemplate.opsForValue().increment(TOPIC_IDS_COUNTER, 1L).intValue();
         topic.setId(id);
-        redisTemplate.execute(new RedisCallback<Object>() {
+        redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 sc.sAdd(TOPIC_IDS, StringTypeConverter.fromInteger(id));
-                sc.hMSet(hashKey(id), topic.buildRedisMap());
+                sc.hMSet(topicHashKey(id), topic.buildRedisMap());
                 return null;
             }
         });
         return topic;
     }
 
-    private String hashKey(int id){
-        return TOPIC_HASH_PREFIX + id;
+    /**
+     * Messages have links to topics, so this method deletes topic with all his messages
+     * */
+    @Override
+    public void delete(int id) {
+        redisTemplate.opsForSet().members(messagesInTopicSetKey(id)).stream()
+                .map(StringTypeConverter::toInteger).forEach(messageDao::delete);
+
+        redisTemplate.delete(topicHashKey(id));
+        redisTemplate.opsForSet().remove(TOPIC_IDS, StringTypeConverter.fromInteger(id));
     }
 }

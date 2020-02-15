@@ -13,4 +13,6 @@ public interface AccountDao extends UserDetailsService {
 
     RegisterResult register(Account account);
 
+    void delete(String username);
+
 }

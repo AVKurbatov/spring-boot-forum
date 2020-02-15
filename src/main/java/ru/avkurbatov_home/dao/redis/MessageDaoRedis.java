@@ -18,6 +18,8 @@ import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static ru.avkurbatov_home.dao.redis.StructureNames.*;
+
 /**
  * Structure in redis:
  * MESSAGE_IDS_COUNTER --- value with ids
@@ -25,23 +27,16 @@ import java.util.*;
  * MESSAGE_HASH_PREFIX + ":id" --- hash with id and title
  *
  * TOPIC_IDS_WITH_MESSAGES_SET --- set with all topicIds with messages
- * MESSAGE_IDS_FOR_TOPIC_PREFIX + ":topicId" --- set with all ids in this topic
+ * MESSAGE_IDS_IN_TOPIC_PREFIX + ":topicId" --- set with all ids in this topic
  *
  * ACCOUNT_IDS_WITH_MESSAGES_SET --- set with all usernames with messages
- * MESSAGE_IDS_FOR_ACCOUNT_PREFIX + ":username" --- set with all usernames in this topic
+ * MESSAGE_IDS_IN_ACCOUNT_PREFIX + ":username" --- set with all message ids made by this user
  *
  * */
 @Slf4j
 @Repository
 @Profile("redis")
 public class MessageDaoRedis implements MessageDao {
-    private static final String MESSAGE_IDS_COUNTER = "messageIdsCount";
-    private static final String MESSAGE_IDS = "messages";
-    private static final String MESSAGE_HASH_PREFIX = "message:";
-    private static final String TOPIC_IDS_WITH_MESSAGES_SET = "messagesForTopics";
-    private static final String MESSAGE_IDS_FOR_TOPIC_PREFIX = "messagesForTopic:";
-    private static final String ACCOUNT_IDS_WITH_MESSAGES_SET = "messagesForAccounts";
-    private static final String MESSAGE_IDS_FOR_ACCOUNT_PREFIX = "messagesForAccount:";
 
     private final int PAGE_SIZE;
     private static final MessageComparator messageComparator = new MessageComparator();
@@ -63,13 +58,16 @@ public class MessageDaoRedis implements MessageDao {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
-                Set<String> ids = sc.sMembers(topicsSetKey(topicId));
+                Set<String> ids = sc.sMembers(messagesInTopicSetKey(topicId));
                 ids.forEach(id -> {
                     Integer intId = StringTypeConverter.toInteger(id);
                     if (intId == null){
                         return;
                     }
-                    messages.add(Message.fromRedisMap(sc.hGetAll(hashKey(intId))));
+                    Message message = findById(sc, intId);
+                    if (message != null) {
+                        messages.add(message);
+                    }
                 });
                 return null;
             }
@@ -93,7 +91,7 @@ public class MessageDaoRedis implements MessageDao {
 
     @Override
     public int findTotalNumberOfPages(int topicId) {
-        Long numberOfMessages = redisTemplate.opsForSet().size(topicsSetKey(topicId));
+        Long numberOfMessages = redisTemplate.opsForSet().size(messagesInTopicSetKey(topicId));
         if (numberOfMessages == null) {
             throw new IllegalArgumentException("TopicId " + topicId + " is absent in database");
         }
@@ -106,24 +104,63 @@ public class MessageDaoRedis implements MessageDao {
         message.setId(id);
         Integer topicId = message.getTopicId();
         String username = message.getAccountUsername();
-        redisTemplate.execute(new RedisCallback<Object>() {
+        redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
             public Object doInRedis(RedisConnection connection) throws DataAccessException {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 sc.sAdd(MESSAGE_IDS, StringTypeConverter.fromInteger(id));
-                sc.hMSet(hashKey(id), message.buildRedisMap());
+                sc.hMSet(messageHashKey(id), message.buildRedisMap());
                 if (topicId != null) {
                     sc.sAdd(TOPIC_IDS_WITH_MESSAGES_SET, StringTypeConverter.fromInteger(topicId));
-                    sc.sAdd(topicsSetKey(topicId), StringTypeConverter.fromInteger(id));
+                    sc.sAdd(messagesInTopicSetKey(topicId), StringTypeConverter.fromInteger(id));
                 }
                 if (username != null) {
                     sc.sAdd(ACCOUNT_IDS_WITH_MESSAGES_SET, username);
-                    sc.sAdd(accountSetKey(username), StringTypeConverter.fromInteger(id));
+                    sc.sAdd(messagesInAccountSetKey(username), StringTypeConverter.fromInteger(id));
                 }
                 return null;
             }
         });
         return message;
+    }
+
+    @Override
+    public void delete(int id) {
+        redisTemplate.execute(new RedisCallback<Object>() {
+            @Override
+            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                final StringRedisConnection sc = new DefaultStringRedisConnection(connection);
+                sc.sRem(MESSAGE_IDS, StringTypeConverter.fromInteger(id));
+                final Message message = findById(sc, id);
+                if (message == null) {
+                    return null;
+                }
+                sc.del(messageHashKey(id));
+                final Integer topicId = message.getTopicId();
+                if (topicId != null) {
+                    removeMessageFromTopicSet(sc, id, topicId);
+                }
+                final String username = message.getAccountUsername();
+                if (username != null) {
+                    removeMessageFromAccountSet(sc, id, username);
+                }
+                return null;
+            }
+        });
+    }
+
+    private void removeMessageFromTopicSet(StringRedisConnection sc, int id, Integer topicId) {
+        sc.sRem(messagesInTopicSetKey(topicId), StringTypeConverter.fromInteger(id));
+        if (!sc.exists(messagesInTopicSetKey(topicId))) {
+            sc.sRem(TOPIC_IDS_WITH_MESSAGES_SET, StringTypeConverter.fromInteger(topicId));
+        }
+    }
+
+    private void removeMessageFromAccountSet(StringRedisConnection sc, int id, String username) {
+        sc.sRem(messagesInAccountSetKey(username), StringTypeConverter.fromInteger(id));
+        if (!sc.exists(messagesInAccountSetKey(username))) {
+            sc.sRem(ACCOUNT_IDS_WITH_MESSAGES_SET, username);
+        }
     }
 
     private static class MessageComparator implements Comparator<Message>{
@@ -151,15 +188,8 @@ public class MessageDaoRedis implements MessageDao {
         }
     }
 
-    private String hashKey(int id) {
-        return MESSAGE_HASH_PREFIX + id;
+    private Message findById(StringRedisConnection sc, int id) {
+        return Message.fromRedisMap(sc.hGetAll(messageHashKey(id)));
     }
 
-    private String topicsSetKey(int topicId){
-        return MESSAGE_IDS_FOR_TOPIC_PREFIX + topicId;
-    }
-
-    private String accountSetKey(String username){
-        return MESSAGE_IDS_FOR_ACCOUNT_PREFIX + username;
-    }
 }

@@ -1,6 +1,7 @@
 package ru.avkurbatov_home.dao.jdbc;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
@@ -19,6 +20,7 @@ public class TopicDaoJdbc implements TopicDao {
 
     private static final String FIND_ALL_TOPICS_QUERY = Utils.readScript("sql/find_all_topics.sql");
     private static final String FIND_TOPIC_BY_ID_QUERY = Utils.readScript("sql/find_topic_by_id.sql");
+    private static final String DELETE_TOPIC_BY_ID_QUERY = Utils.readScript("sql/delete_topic_by_id.sql");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -40,7 +42,11 @@ public class TopicDaoJdbc implements TopicDao {
 
     @Override
     public Topic findById(int id) {
-        return jdbcTemplate.queryForObject(FIND_TOPIC_BY_ID_QUERY, this::mapRowToTopic, id);
+        try {
+            return jdbcTemplate.queryForObject(FIND_TOPIC_BY_ID_QUERY, this::mapRowToTopic, id);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     @Override
@@ -48,6 +54,11 @@ public class TopicDaoJdbc implements TopicDao {
         int id = topicInserter.executeAndReturnKey(topic.buildSqlMap()).intValue();
         topic.setId(id);
         return topic;
+    }
+
+    @Override
+    public void delete(int id) {
+        jdbcTemplate.update(DELETE_TOPIC_BY_ID_QUERY, id);
     }
 
     private Topic mapRowToTopic(ResultSet rs, int rowNum) throws SQLException {

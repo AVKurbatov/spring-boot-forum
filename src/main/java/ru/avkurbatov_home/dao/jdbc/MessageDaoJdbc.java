@@ -26,6 +26,8 @@ public class MessageDaoJdbc implements MessageDao {
             Utils.readScript("sql/find_messages_for_page.sql");
     private final static String COUNT_MESSAGES_QUERY =
             Utils.readScript("sql/count_messages.sql");
+    private final static String DELETE_MESSAGE_BY_ID_QUERY =
+            Utils.readScript("sql/delete_message_by_id.sql");
 
     private final int PAGE_SIZE;
     private final JdbcTemplate jdbcTemplate;
@@ -70,6 +72,11 @@ public class MessageDaoJdbc implements MessageDao {
         message.setId(id);
         return message;
 
+    }
+
+    @Override
+    public void delete(int id) {
+        jdbcTemplate.update(DELETE_MESSAGE_BY_ID_QUERY, id);
     }
 
     private Message mapRowToMessage(ResultSet rs, int rowNum) throws SQLException {
