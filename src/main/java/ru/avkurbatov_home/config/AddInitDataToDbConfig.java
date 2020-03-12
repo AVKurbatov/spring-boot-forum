@@ -19,6 +19,10 @@ import java.time.LocalDate;
  * */
 @Configuration
 public class AddInitDataToDbConfig {
+
+    private static final String DREAM_TRUCKER = "Dream Trucker";
+    private static final String MORELLI = "Morelli";
+    private static final String MADAM = "Madam";
     
     private AccountDao accountDao;
     private TopicDao topicDao;
@@ -42,7 +46,7 @@ public class AddInitDataToDbConfig {
     @PostConstruct
     public void init(){
         Account account = new Account();
-        account.setUsername("Dream Trucker");
+        account.setUsername(DREAM_TRUCKER);
         account.setPassword("bingo");
         account.setEmail("truck@mail.ru");
         account.setSex(Sex.MALE);
@@ -52,7 +56,7 @@ public class AddInitDataToDbConfig {
         accountDao.register(account);
 
         account = new Account();
-        account.setUsername("Morelli");
+        account.setUsername(MORELLI);
         account.setPassword("123");
         account.setEmail("mc_bomfunc@mail.ru");
         account.setSex(Sex.MALE);
@@ -61,7 +65,7 @@ public class AddInitDataToDbConfig {
         accountDao.register(account);
 
         account = new Account();
-        account.setUsername("Madam");
+        account.setUsername(MADAM);
         account.setPassword("qwerty");
         account.setEmail("dj_go@yandex.ya");
         account.setSex(Sex.FEMALE);
@@ -88,43 +92,43 @@ public class AddInitDataToDbConfig {
 
         Message message = new Message();
         message.setTopicId(2);
-        message.setAccountUsername("Dream Trucker");
+        message.setAccountUsername(DREAM_TRUCKER);
         message.setText("Hello, friends! This is a little forum, where you can write anything!");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(3);
-        message.setAccountUsername("Madam");
+        message.setAccountUsername(MADAM);
         message.setText("Hi, Boys! Where are you from?");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(3);
-        message.setAccountUsername("Morelli");
+        message.setAccountUsername(MORELLI);
         message.setText("I am from Huston, and you?");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(3);
-        message.setAccountUsername("Madam");
+        message.setAccountUsername(MADAM);
         message.setText("I am from Boston.");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(3);
-        message.setAccountUsername("Morelli");
+        message.setAccountUsername(MORELLI);
         message.setText("Call me when you will be in Huston.");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(3);
-        message.setAccountUsername("Madam");
+        message.setAccountUsername(MADAM);
         message.setText("Maybe you will call me, I have not your phone.");
         messageDao.save(message);
 
         message = new Message();
         message.setTopicId(1);
-        message.setAccountUsername("Dream Trucker");
+        message.setAccountUsername(DREAM_TRUCKER);
         message.setText("We moved to a localhost and it is very exciting!");
         messageDao.save(message);
     }

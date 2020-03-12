@@ -22,22 +22,22 @@ import java.util.Map;
 @Profile("h2")
 public class MessageDaoJdbc implements MessageDao {
 
-    private final static String FIND_MESSAGES_FOR_PAGE_QUERY =
+    private static final String FIND_MESSAGES_FOR_PAGE_QUERY =
             Utils.readScript("sql/find_messages_for_page.sql");
-    private final static String COUNT_MESSAGES_QUERY =
+    private static final String COUNT_MESSAGES_QUERY =
             Utils.readScript("sql/count_messages.sql");
-    private final static String DELETE_MESSAGE_BY_ID_QUERY =
+    private static final String DELETE_MESSAGE_BY_ID_QUERY =
             Utils.readScript("sql/delete_message_by_id.sql");
 
-    private final int PAGE_SIZE;
+    private final int pageSize;
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert messageInserter;
-    private final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Inject
     public MessageDaoJdbc(@Value("${message.dao.page.size}") int pageSize,
                           JdbcTemplate jdbcTemplate){
-        this.PAGE_SIZE = pageSize;
+        this.pageSize = pageSize;
         this.jdbcTemplate = jdbcTemplate;
         this.messageInserter = new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("messages")
@@ -46,8 +46,8 @@ public class MessageDaoJdbc implements MessageDao {
 
     @Override
     public List<Message> findForPage(int topicId, int pageNumber) {
-        return jdbcTemplate.query(FIND_MESSAGES_FOR_PAGE_QUERY, this::mapRowToMessage, topicId,
-                pageNumber * PAGE_SIZE, (pageNumber + 1) * PAGE_SIZE);
+        return jdbcTemplate.query(FIND_MESSAGES_FOR_PAGE_QUERY, (rs, num) -> this.mapRowToMessage(rs), topicId,
+                pageNumber * pageSize, (pageNumber + 1) * pageSize);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class MessageDaoJdbc implements MessageDao {
         if (numberOfMessages == null) {
             throw new IllegalArgumentException("TopicId " + topicId + " is absent in database");
         }
-        return (int)Math.ceil((double)numberOfMessages / PAGE_SIZE);
+        return (int)Math.ceil((double)numberOfMessages / pageSize);
     }
 
     @Override
@@ -79,7 +79,7 @@ public class MessageDaoJdbc implements MessageDao {
         jdbcTemplate.update(DELETE_MESSAGE_BY_ID_QUERY, id);
     }
 
-    private Message mapRowToMessage(ResultSet rs, int rowNum) throws SQLException {
+    private Message mapRowToMessage(ResultSet rs) throws SQLException {
         Message message = new Message();
         message.setId(rs.getInt("id"));
         message.setTopicId(rs.getInt("topicId"));

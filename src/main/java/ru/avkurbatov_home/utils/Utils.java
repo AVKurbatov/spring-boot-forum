@@ -8,7 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.io.IOException;
 
 public final class Utils {
-    public final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private Utils() {}
 
@@ -17,7 +17,7 @@ public final class Utils {
             return IOUtils.toString(new ClassPathResource(filename).getInputStream());
         }
         catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 

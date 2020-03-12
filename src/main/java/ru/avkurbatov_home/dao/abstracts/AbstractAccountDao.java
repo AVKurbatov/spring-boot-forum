@@ -10,7 +10,7 @@ import ru.avkurbatov_home.jdo.Account;
 public abstract class AbstractAccountDao implements AccountDao {
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) {
         Account account = findByUsername(username);
         if (account == null) {
             throw new UsernameNotFoundException("For username " + username);

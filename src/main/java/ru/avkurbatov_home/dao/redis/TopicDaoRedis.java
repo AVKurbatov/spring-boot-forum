@@ -18,7 +18,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ru.avkurbatov_home.dao.redis.StructureNames.*;
 
@@ -48,7 +47,7 @@ public class TopicDaoRedis implements TopicDao {
         List<Topic> topics = new ArrayList<>();
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 Set<String> ids = sc.sMembers(TOPIC_IDS);
                 ids.forEach(id -> {
@@ -76,7 +75,7 @@ public class TopicDaoRedis implements TopicDao {
         topic.setId(id);
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 sc.sAdd(TOPIC_IDS, StringTypeConverter.fromInteger(id));
                 sc.hMSet(topicHashKey(id), topic.buildRedisMap());

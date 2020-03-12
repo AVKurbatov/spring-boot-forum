@@ -2,7 +2,6 @@ package ru.avkurbatov_home.dao.jdbc;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +16,7 @@ import ru.avkurbatov_home.enums.Sex;
 import ru.avkurbatov_home.jdo.Account;
 import ru.avkurbatov_home.utils.DateTypeConverter;
 import ru.avkurbatov_home.utils.Utils;
+
 import javax.inject.Inject;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -91,7 +91,7 @@ public class AccountDaoJdbc extends AbstractAccountDao {
     }
 
     private static class AccountExtractor implements ResultSetExtractor<Account>{
-        public Account extractData(ResultSet rs) throws SQLException, DataAccessException {
+        public Account extractData(ResultSet rs) throws SQLException {
             if (!rs.next()) {
                 return null;
             }

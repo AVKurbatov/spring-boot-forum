@@ -34,8 +34,7 @@ public class MessagesController {
         return new Message();
     }
 
-    @GetMapping
-    @RequestMapping(value="/{topicId}")
+    @GetMapping(value="/{topicId}")
     public String messagesForm(@PathVariable("topicId") int topicId, Model model) {
         model.addAttribute("topicId", topicId);
         return MESSAGES_FORM;

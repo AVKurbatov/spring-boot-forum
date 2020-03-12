@@ -1,8 +1,8 @@
 package ru.avkurbatov_home.dao.redis;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.springframework.context.annotation.Profile;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.DefaultStringRedisConnection;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.StringRedisConnection;
@@ -13,15 +13,15 @@ import ru.avkurbatov_home.dao.abstracts.AbstractAccountDao;
 import ru.avkurbatov_home.dao.abstracts.MessageDao;
 import ru.avkurbatov_home.enums.RegisterResult;
 import ru.avkurbatov_home.jdo.Account;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import ru.avkurbatov_home.utils.StringTypeConverter;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static ru.avkurbatov_home.dao.redis.StructureNames.*;
-import static ru.avkurbatov_home.dao.redis.StructureNames.TOPIC_IDS;
-import static ru.avkurbatov_home.dao.redis.StructureNames.topicHashKey;
 
 /**
  * Structure in redis:
@@ -50,7 +50,7 @@ public class AccountDaoRedis extends AbstractAccountDao {
 
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 map.putAll(sc.hGetAll(accountHashKey(username)));
                 set.addAll(sc.sMembers(accountAuthorityKey(username)));
@@ -70,9 +70,9 @@ public class AccountDaoRedis extends AbstractAccountDao {
 
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
-                if (sc.sIsMember(ACCOUNT_USERNAMES, username)) {
+                if (Boolean.TRUE.equals(sc.sIsMember(ACCOUNT_USERNAMES, username))) {
                     isAccountExist.setValue(true);
                     return null;
                 }

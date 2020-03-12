@@ -3,7 +3,6 @@ package ru.avkurbatov_home.dao.redis;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.DefaultStringRedisConnection;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.StringRedisConnection;
@@ -38,7 +37,7 @@ import static ru.avkurbatov_home.dao.redis.StructureNames.*;
 @Profile("redis")
 public class MessageDaoRedis implements MessageDao {
 
-    private final int PAGE_SIZE;
+    private final int pageSize;
     private static final MessageComparator messageComparator = new MessageComparator();
 
     private final RedisTemplate<String, Object> redisTemplate;
@@ -46,7 +45,7 @@ public class MessageDaoRedis implements MessageDao {
     @Inject
     public MessageDaoRedis(@Value("${message.dao.page.size}") int pageSize,
                             RedisTemplate<String, Object> redisTemplate) {
-        this.PAGE_SIZE = pageSize;
+        this.pageSize = pageSize;
         this.redisTemplate = redisTemplate;
     }
 
@@ -56,7 +55,7 @@ public class MessageDaoRedis implements MessageDao {
 
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 Set<String> ids = sc.sMembers(messagesInTopicSetKey(topicId));
                 ids.forEach(id -> {
@@ -73,8 +72,8 @@ public class MessageDaoRedis implements MessageDao {
             }
         });
 
-        int from = pageNumber * PAGE_SIZE;
-        int to = (pageNumber + 1) * PAGE_SIZE;
+        int from = pageNumber * pageSize;
+        int to = (pageNumber + 1) * pageSize;
         int size = messages.size();
 
         if (from >= size) {
@@ -95,7 +94,7 @@ public class MessageDaoRedis implements MessageDao {
         if (numberOfMessages == null) {
             throw new IllegalArgumentException("TopicId " + topicId + " is absent in database");
         }
-        return (int)Math.ceil((double)numberOfMessages.intValue() / PAGE_SIZE);
+        return (int)Math.ceil((double)numberOfMessages.intValue() / pageSize);
     }
 
     @Override
@@ -106,7 +105,7 @@ public class MessageDaoRedis implements MessageDao {
         String username = message.getAccountUsername();
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 sc.sAdd(MESSAGE_IDS, StringTypeConverter.fromInteger(id));
                 sc.hMSet(messageHashKey(id), message.buildRedisMap());
@@ -128,7 +127,7 @@ public class MessageDaoRedis implements MessageDao {
     public void delete(int id) {
         redisTemplate.execute(new RedisCallback<Object>() {
             @Override
-            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+            public Object doInRedis(RedisConnection connection) {
                 final StringRedisConnection sc = new DefaultStringRedisConnection(connection);
                 sc.sRem(MESSAGE_IDS, StringTypeConverter.fromInteger(id));
                 final Message message = findById(sc, id);

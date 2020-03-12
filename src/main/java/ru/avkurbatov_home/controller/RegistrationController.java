@@ -21,7 +21,7 @@ import javax.validation.Valid;
 @ControllerLogs
 @RequestMapping("/register")
 public class RegistrationController {
-    private final static String DAO_RESULT = "daoResult";
+    private static final String DAO_RESULT = "daoResult";
 
     private final AccountDao accountDao;
     private final PasswordEncoder passwordEncoder;
